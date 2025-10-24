@@ -19,11 +19,7 @@ clean:
 	rm -rf ./.zig-cache
 
 install:
-	install -Dm755 ./zig-out/bin/hclos "$(PREFIX)/bin/hclos"
-	if [ -d "$(PREFIX)/etc" ]; then \
-		install -Dm755 ./src/templates/repos_template.toml "$(PREFIX)/etc/hclos/repos.toml" \
-	fi
-	ln -s "$(PREFIX)/bin/hclos" "$(PREFIX)/bin/huis-boot"
+	install -Dm755 ./zig-out/bin/hburg "$(PREFIX)/bin/hburg"
 
 fmt:
 	find src -type f -name '*.zig' -exec zig fmt {} +
