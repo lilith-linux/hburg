@@ -1,0 +1,5 @@
+.zig-cache
+*.o
+zig-out
+external-bin
+

@@ -1,0 +1,7 @@
+usage: hburg <command> [options] [args]
+
+commands:
+  build         build a package list
+  clean         clean package list
+  version       show version
+  help          show this message
