@@ -1,7 +1,8 @@
 usage: hburg <command> [options] [args]
 
 commands:
-  build         build a package list
-  clean         clean package list
-  version       show version
+  make <FILE>   build the specified package using its build.sh script
+  build         build all packages in the list
+  clean         clean the package list
+  version       show the version
   help          show this message
