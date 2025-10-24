@@ -1,8 +1,7 @@
 const std = @import("std");
 const eql = std.mem.eql;
 
-const update = @import("update");
-const install = @import("install");
+const build = @import("build");
 
 const help_message = @embedFile("./templates/help_message");
 
@@ -15,6 +14,10 @@ pub fn main() !void {
     if (args.len < 2) {
         try display_help();
         std.process.exit(1);
+    }
+
+    if (eql(u8, args[1], "build")) {
+        try build.build();
     }
 
     return;

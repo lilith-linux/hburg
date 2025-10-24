@@ -1,41 +1,61 @@
 const minisign = @embedFile("./external-bin/bin/minisign");
 const std = @import("std");
 const constants = @import("constants");
+const blake3 = std.crypto.hash.Blake3;
 
-pub fn exec_minisign(alc: std.mem.Allocator, info: bool, name: []const u8, args: []const []const u8) !bool {
-    const rand = build_random();
-    const minisign_file = try std.fmt.allocPrint(alc, "/tmp/{d}.minisign_file", .{rand});
-    defer alc.free(minisign_file);
+const Minisign = struct {
+    minisign_file: []const u8,
 
-    var file = try std.fs.createFileAbsolute(minisign_file, .{});
-    try file.writeAll(minisign);
-    try file.setPermissions(.{ .inner = .{ .mode = 0o755 } });
-    file.close();
-    defer del_file(minisign_file);
+    pub fn init(allocator: std.mem.Allocator) Minisign {
+        const rand = build_random();
+        const minisign_file = try std.fmt.allocPrint(allocator, "/tmp/{d}.minisign_file", .{rand});
 
-    const exec = try std.mem.concat(alc, []const u8, &[_][]const []const u8{
-        &[_][]const u8{minisign_file},
-        args,
-    });
-    defer alc.free(exec);
+        var file = try std.fs.createFileAbsolute(minisign_file, .{});
+        try file.writeAll(minisign);
+        try file.setPermissions(.{ .inner = .{ .mode = 0o755 } });
+        defer file.close();
 
-    var child = std.process.Child.init(exec, alc);
-
-    child.stdout_behavior = .Ignore;
-    child.stderr_behavior = .Ignore;
-
-    const result = try child.spawnAndWait();
-
-    if (result != .Exited or result.Exited != 0) {
-        if (info) {
-            std.debug.print("\r\x1b[2KSignature verification failed: {s}\n", .{name});
-        } else {
-            std.debug.print("\nSignature verification failed: {s}\n", .{name});
-        }
-        return false;
+        return Minisign {
+            .minisign_file = minisign_file,
+        };
     }
-    return true;
-}
+
+    pub fn deinit(self: Minisign) !void {
+        del_file(self.minisign_file);
+    }
+
+    pub fn sign(self: Minisign, alc: std.mem.Allocator, path: []const u8) !bool {
+        const err_msg = std.fmt.allocPrint(alc, "Failed to sign {s}", .{path});
+        const args = &[_][]const u8 {
+            "-Sm", path
+        };
+        self.exec(alc, err_msg, args[0..]);
+    }
+
+    pub fn exec(self: Minisign, alc: std.mem.Allocator, err_message: []const u8, args: []const []const u8) !bool {
+
+        const exec_args = try std.mem.concat(alc, []const u8, &[_][]const []const u8{
+            &[_][]const u8{self.minisign_file},
+            args,
+        });
+        defer alc.free(exec_args);
+
+        var child = std.process.Child.init(exec_args, alc);
+
+        child.stdout_behavior = .Inherit;
+        child.stderr_behavior = .Inherit;
+        child.stdin_behavior = .Inherit;
+
+        const result = try child.spawnAndWait();
+
+        if (result != .Exited or result.Exited != 0) {
+            std.debug.print("{s}", .{err_message});
+            return false;
+        }
+        return true;
+    }
+};
+
 
 fn build_random() u64 {
     var seed: [8]u8 = undefined;

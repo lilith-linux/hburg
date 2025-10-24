@@ -40,6 +40,16 @@ pub fn build(b: *std.Build) void {
     });
     repos_conf.addImport("toml", dep_toml.module("toml"));
 
+    const build_indexes = b.addModule("build", .{
+        .root_source_file = b.path("src/build/build.zig"),
+        .target = target,
+        .imports = &.{
+            .{ .name = "constants", .module = constants },
+            .{ .name = "minisign", .module = minisign },
+            .{ .name = "info", .module = info },
+        }
+    });
+
     const package = b.addModule("package", .{
         .root_source_file = b.path("src/package/package.zig"),
         .target = target,
@@ -75,6 +85,7 @@ pub fn build(b: *std.Build) void {
                 .{ .name = "repos_conf", .module = repos_conf },
                 .{ .name = "reader", .module = reader },
                 .{ .name = "writer", .module = writer },
+                .{ .name = "build", .module = build_indexes },
             }
         }),
     });

@@ -9,7 +9,7 @@ all:
 		mkdir ./src/external-bin -p; \
 	fi
 	cd ./external/minisign/ && zig build -Doptimize=ReleaseSmall --prefix "$$(realpath ../../src/external-bin)"
-	zig build -Doptimize=ReleaseSmall
+	zig build -Doptimize=ReleaseFast
 
 clean:
 	rm -rf ./external/minisign/zig-out 
