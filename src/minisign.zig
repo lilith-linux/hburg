@@ -15,7 +15,7 @@ const Minisign = struct {
         try file.setPermissions(.{ .inner = .{ .mode = 0o755 } });
         defer file.close();
 
-        return Minisign {
+        return Minisign{
             .minisign_file = minisign_file,
         };
     }
@@ -26,14 +26,11 @@ const Minisign = struct {
 
     pub fn sign(self: Minisign, alc: std.mem.Allocator, path: []const u8) !bool {
         const err_msg = std.fmt.allocPrint(alc, "Failed to sign {s}", .{path});
-        const args = &[_][]const u8 {
-            "-Sm", path
-        };
+        const args = &[_][]const u8{ "-Sm", path };
         self.exec(alc, err_msg, args[0..]);
     }
 
     pub fn exec(self: Minisign, alc: std.mem.Allocator, err_message: []const u8, args: []const []const u8) !bool {
-
         const exec_args = try std.mem.concat(alc, []const u8, &[_][]const []const u8{
             &[_][]const u8{self.minisign_file},
             args,
@@ -55,7 +52,6 @@ const Minisign = struct {
         return true;
     }
 };
-
 
 fn build_random() u64 {
     var seed: [8]u8 = undefined;

@@ -40,16 +40,6 @@ pub fn build(b: *std.Build) void {
     });
     repos_conf.addImport("toml", dep_toml.module("toml"));
 
-    const build_indexes = b.addModule("build", .{
-        .root_source_file = b.path("src/build/build.zig"),
-        .target = target,
-        .imports = &.{
-            .{ .name = "constants", .module = constants },
-            .{ .name = "minisign", .module = minisign },
-            .{ .name = "info", .module = info },
-        }
-    });
-
     const package = b.addModule("package", .{
         .root_source_file = b.path("src/package/package.zig"),
         .target = target,
@@ -71,6 +61,32 @@ pub fn build(b: *std.Build) void {
         }
     });
 
+    const make_index = b.addModule("make_index", .{
+        .root_source_file = b.path("src/build/make_index.zig"),
+        .target = target,
+        .imports = &.{
+            .{ .name = "constants", .module = constants },
+            .{ .name = "minisign", .module = minisign },
+            .{ .name = "info", .module = info },
+            .{ .name = "package", .module = package },
+            .{ .name = "reader", .module = reader },
+            .{ .name = "writer", .module = writer },
+        }
+    });
+
+
+    const build_indexes = b.addModule("build", .{
+        .root_source_file = b.path("src/build/build.zig"),
+        .target = target,
+        .imports = &.{
+            .{ .name = "constants", .module = constants },
+            .{ .name = "minisign", .module = minisign },
+            .{ .name = "info", .module = info },
+            .{ .name = "make_index", .module = make_index },
+        }
+    });
+
+
     const exe = b.addExecutable(.{
         .name = "hburg",
         .linkage = .static,
@@ -86,6 +102,7 @@ pub fn build(b: *std.Build) void {
                 .{ .name = "reader", .module = reader },
                 .{ .name = "writer", .module = writer },
                 .{ .name = "build", .module = build_indexes },
+                .{ .name = "make_index", .module = make_index },
             }
         }),
     });

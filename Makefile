@@ -1,5 +1,5 @@
 ZIG = zig
-PREFIX ?= /usr
+PREFIX ?=/usr
 
 .PHONY: all install fmt
 
@@ -10,6 +10,8 @@ all:
 	fi
 	cd ./external/minisign/ && zig build -Doptimize=ReleaseSmall --prefix "$$(realpath ../../src/external-bin)"
 	zig build -Doptimize=ReleaseFast
+
+distclean: clean
 
 clean:
 	rm -rf ./external/minisign/zig-out 
