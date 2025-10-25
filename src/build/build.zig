@@ -138,7 +138,6 @@ pub fn build() !void {
 
     thread_pool.waitAndWork(&wg);
     std.debug.print("\n", .{});
-
 }
 
 fn hashWorkerWrapper(

@@ -1,7 +1,6 @@
 const std = @import("std");
 
-
-pub fn make_index(allocator: std.mem.Allocator) !bool{
+pub fn make_index(allocator: std.mem.Allocator) !bool {
     var packages = std.ArrayList([]const u8){};
     defer {
         for (packages.items) |items| {
@@ -23,11 +22,8 @@ pub fn make_index(allocator: std.mem.Allocator) !bool{
     }
 }
 
-
 fn get_value(alc: std.mem.Allocator, file: []const u8, value: []const u8) ![]const u8 {
-    const child = std.process.Child.init(&.{
-        "/usr/bin/sh", ". " ++ file, "echo \"$" ++ value ++ "\""
-    }, alc);
+    const child = std.process.Child.init(&.{ "/usr/bin/sh", ". " ++ file, "echo \"$" ++ value ++ "\"" }, alc);
 
     child.stdout_behavior = .Pipe;
     child.stderr_behavior = .Pipe;
@@ -45,5 +41,3 @@ fn get_value(alc: std.mem.Allocator, file: []const u8, value: []const u8) ![]con
     try stdout.readAll(&buffer);
     return buffer;
 }
-
-
