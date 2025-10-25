@@ -1,5 +1,4 @@
 const std = @import("std");
-const minisign_build = @import("./external/minisign/build.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.resolveTargetQuery(.{
@@ -26,10 +25,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
     });
 
-    const minisign = b.addModule("minisign", .{
-        .root_source_file = b.path("src/minisign.zig"),
-        .target = target,
-    });
 
     const repos_conf = b.addModule("repos_conf", .{
         .root_source_file = b.path("src/repos_conf.zig"),
@@ -66,7 +61,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .imports = &.{
             .{ .name = "constants", .module = constants },
-            .{ .name = "minisign", .module = minisign },
             .{ .name = "info", .module = info },
             .{ .name = "package", .module = package },
             .{ .name = "reader", .module = reader },
@@ -80,7 +74,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .imports = &.{
             .{ .name = "constants", .module = constants },
-            .{ .name = "minisign", .module = minisign },
             .{ .name = "info", .module = info },
             .{ .name = "make_index", .module = make_index },
         }
@@ -97,7 +90,6 @@ pub fn build(b: *std.Build) void {
             .imports = &.{
                 .{ .name = "constants", .module = constants },
                 .{ .name = "info", .module = info },
-                .{ .name = "minisign", .module = minisign },
                 .{ .name = "repos_conf", .module = repos_conf },
                 .{ .name = "reader", .module = reader },
                 .{ .name = "writer", .module = writer },
