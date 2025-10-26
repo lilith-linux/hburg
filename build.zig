@@ -25,49 +25,31 @@ pub fn build(b: *std.Build) void {
         .target = target,
     });
 
-
-    const repos_conf = b.addModule("repos_conf", .{
-        .root_source_file = b.path("src/repos_conf.zig"),
-        .target = target,
-        .imports = &.{
-            .{ .name = "constants", .module = constants },
-        }
-    });
+    const repos_conf = b.addModule("repos_conf", .{ .root_source_file = b.path("src/repos_conf.zig"), .target = target, .imports = &.{
+        .{ .name = "constants", .module = constants },
+    } });
     repos_conf.addImport("toml", dep_toml.module("toml"));
 
     const package = b.addModule("package", .{
         .root_source_file = b.path("src/package/package.zig"),
         .target = target,
     });
-    
-    const writer = b.addModule("writer", .{
-        .root_source_file = b.path("src/package/writer/writer.zig"),
-        .target = target,
-        .imports = &.{
-            .{ .name = "package", .module = package },
-        }
-    });
 
-    const reader = b.addModule("reader", .{
-        .root_source_file = b.path("src/package/reader/reader.zig"),
-        .target = target,
-        .imports = &.{
-            .{ .name = "package", .module = package },
-        }
-    });
+    const writer = b.addModule("writer", .{ .root_source_file = b.path("src/package/writer/writer.zig"), .target = target, .imports = &.{
+        .{ .name = "package", .module = package },
+    } });
 
-    const make_index = b.addModule("make_index", .{
-        .root_source_file = b.path("src/build/make_index.zig"),
-        .target = target,
-        .imports = &.{
-            .{ .name = "constants", .module = constants },
-            .{ .name = "info", .module = info },
-            .{ .name = "package", .module = package },
-            .{ .name = "reader", .module = reader },
-            .{ .name = "writer", .module = writer },
-        }
-    });
+    const reader = b.addModule("reader", .{ .root_source_file = b.path("src/package/reader/reader.zig"), .target = target, .imports = &.{
+        .{ .name = "package", .module = package },
+    } });
 
+    const make_index = b.addModule("make_index", .{ .root_source_file = b.path("src/build/make_index.zig"), .target = target, .optimize = optimize, .imports = &.{
+        .{ .name = "constants", .module = constants },
+        .{ .name = "info", .module = info },
+        .{ .name = "package", .module = package },
+        .{ .name = "reader", .module = reader },
+        .{ .name = "writer", .module = writer },
+    } });
 
     const build_indexes = b.addModule("build", .{
         .root_source_file = b.path("src/build/build.zig"),
@@ -75,30 +57,27 @@ pub fn build(b: *std.Build) void {
         .imports = &.{
             .{ .name = "constants", .module = constants },
             .{ .name = "info", .module = info },
+            .{ .name = "package", .module = package },
+            .{ .name = "reader", .module = reader },
+            .{ .name = "writer", .module = writer },
             .{ .name = "make_index", .module = make_index },
-        }
+        },
     });
-
 
     const exe = b.addExecutable(.{
         .name = "hburg",
         .linkage = .static,
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "constants", .module = constants },
-                .{ .name = "info", .module = info },
-                .{ .name = "repos_conf", .module = repos_conf },
-                .{ .name = "reader", .module = reader },
-                .{ .name = "writer", .module = writer },
-                .{ .name = "build", .module = build_indexes },
-                .{ .name = "make_index", .module = make_index },
-            }
-        }),
+        .root_module = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize, .imports = &.{
+            .{ .name = "constants", .module = constants },
+            .{ .name = "info", .module = info },
+            .{ .name = "repos_conf", .module = repos_conf },
+            .{ .name = "reader", .module = reader },
+            .{ .name = "writer", .module = writer },
+            .{ .name = "package", .module = package },
+            .{ .name = "build", .module = build_indexes },
+            .{ .name = "make_index", .module = make_index },
+        } }),
     });
-
 
     // imports
     exe.root_module.addImport("toml", dep_toml.module("toml"));

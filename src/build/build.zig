@@ -96,6 +96,7 @@ pub fn build() !void {
         const ext = std.fs.path.extension(entry.name);
         if (std.mem.eql(u8, ext, ".hcl") or std.mem.eql(u8, ext, ".hb")) {
             const hash_file = try std.fmt.allocPrint(allocator, "{s}.hash", .{entry.name});
+            defer allocator.free(hash_file);
             if (exists(hash_file)) {
                 continue;
             }
@@ -106,7 +107,8 @@ pub fn build() !void {
     }
 
     if (checklist.items.len == 0) {
-        try info(allocator, "No .hcl files found.\n", .{});
+        try info(allocator, "No new .hcl files found.\n", .{});
+        try create_index(allocator);
         return;
     }
 
@@ -138,6 +140,17 @@ pub fn build() !void {
 
     thread_pool.waitAndWork(&wg);
     std.debug.print("\n", .{});
+    try create_index(allocator);
+}
+
+fn create_index(allocator: std.mem.Allocator) !void {
+    std.debug.print("index: progress", .{});
+    const avail = try make_index.make_index(allocator);
+    if (avail) {
+        std.debug.print("\r\x1b[2Kindex created to {s}\n", .{"index.bin"});
+    } else {
+        std.debug.print("\r\x1b[2Kindex create failed\n", .{});
+    }
 }
 
 fn hashWorkerWrapper(
@@ -151,7 +164,7 @@ fn hashWorkerWrapper(
     }
 
     hashWorker(job) catch |err| {
-        std.debug.print("\nError hashing {s}: {}\n", .{ job.path, err });
+        std.debug.print("\nError hashing {s}: {any}\n", .{ job.path, err });
         return;
     };
 
