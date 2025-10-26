@@ -1,9 +1,8 @@
+const help_message = @embedFile("./templates/help_message");
 const std = @import("std");
 const eql = std.mem.eql;
-
+const make_hb = @import("make");
 const build = @import("build");
-
-const help_message = @embedFile("./templates/help_message");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
@@ -17,7 +16,13 @@ pub fn main() !void {
     }
 
     if (eql(u8, args[1], "build")) {
-        try build.build();
+        try build.build(allocator);
+    } else if (eql(u8, args[1], "make")) {
+        if (args.len < 3) {
+            std.debug.print("Usage: hburg make <FILE>\n", .{});
+            std.process.exit(1);
+        }
+        try make_hb.make(allocator, args[2]);
     }
 
     return;

@@ -3,6 +3,5 @@ usage: hburg <command> [options] [args]
 commands:
   make <FILE>   build the specified package using its build.sh script
   build         build all packages' bleak3 hashes and generate index.bin, index.bin.minisig, and <name>.pub
-  clean         clean the package list
   version       show the version
   help          show this message

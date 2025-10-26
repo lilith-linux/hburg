@@ -36,10 +36,6 @@
             .url = "https://github.com/jiacai2050/zig-curl/archive/refs/tags/v0.3.2.zip",
             .hash = "curl-0.3.2-P4tT4SXPAACuV6f5eyh4jG_1SspjWwMm_vRJfoKrQep5",
         },
-        .toml = .{
-            .url = "git+https://github.com/sam701/zig-toml#3aaeb0bf14935eabae118196f7949b404a42f8ea",
-            .hash = "toml-0.3.0-bV14BTd8AQA-wZERtB3dvRE3eSZ-m48AyXFUGkZ_Tm3d",
-        },
     },
     .paths = .{
         "build.zig",

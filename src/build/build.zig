@@ -1,7 +1,6 @@
 const std = @import("std");
-const minisign = @import("minisign");
 const info = @import("info").info;
-const make_index = @import("make_index.zig");
+const make_index = @import("make_index");
 const Blake3 = std.crypto.hash.Blake3;
 
 const HashJob = struct {
@@ -82,11 +81,7 @@ fn hashWorker(job: HashJob) !void {
     try hash_file(job.allocator, job.path);
 }
 
-pub fn build() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
+pub fn build(allocator: std.mem.Allocator) !void {
     var dir = try std.fs.cwd().openDir(".", .{ .iterate = true });
     defer dir.close();
 

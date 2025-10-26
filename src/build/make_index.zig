@@ -23,22 +23,27 @@ pub fn make_index(allocator: std.mem.Allocator) !bool {
         }
     }
 
-    var packages_list: package.Packages = undefined;
+    var packages_list = try allocator.create(package.Packages);
+    defer allocator.destroy(packages_list);
 
     var i: usize = 0;
     for (packages.items) |pkg| {
         i += 1;
         const pkg_obj = try create_package(allocator, pkg);
-        packages_list.package[i] = pkg_obj;
+        defer allocator.destroy(pkg_obj);
+        packages_list.package[i] = pkg_obj.*;
     }
 
-    try writer.packages_write(packages_list, "index.bin");
+    try writer.packages_write(packages_list.*, "index.bin");
 
     return true;
 }
 
-fn create_package(allocator: std.mem.Allocator, hb_file: []const u8) !package.Package {
-    var pkg: package.Package = undefined;
+pub fn create_package(allocator: std.mem.Allocator, build_file: []const u8) !*package.Package {
+    var pkg = try allocator.create(package.Package);
+
+    const hb_file = try std.fs.realpathAlloc(allocator, build_file);
+    defer allocator.free(hb_file);
 
     const name_val = try get_value(allocator, hb_file, "NAME");
     defer allocator.free(name_val);
@@ -55,6 +60,10 @@ fn create_package(allocator: std.mem.Allocator, hb_file: []const u8) !package.Pa
     const version_val = try get_value(allocator, hb_file, "VERSION");
     defer allocator.free(version_val);
     copy_to_fixed(&pkg.version, version_val);
+
+    const source_val = try get_value(allocator, hb_file, "SOURCE");
+    defer allocator.free(source_val);
+    copy_to_fixed(&pkg.src_url, source_val);
 
     const depends_val = try get_value(allocator, hb_file, "DEPENDS");
     defer allocator.free(depends_val);
@@ -111,7 +120,7 @@ fn get_value(alc: std.mem.Allocator, file: []const u8, value: []const u8) ![]con
     );
 
     var child = std.process.Child.init(
-        &.{ "/bin/sh", "-c", cmd },
+        &.{ "/usr/bin/env", "sh", "-c", cmd },
         arena.allocator(), // arena allocator を使う
     );
 
@@ -128,9 +137,15 @@ fn get_value(alc: std.mem.Allocator, file: []const u8, value: []const u8) ![]con
     }
 
     const stdout = child.stdout.?;
+    const stderr = child.stderr.?;
 
     // readToEndAlloc を使用
     const output = stdout.readToEndAlloc(arena.allocator(), 4096) catch |err| {
+        _ = try child.wait();
+        return err;
+    };
+
+    const output_err = stderr.readToEndAlloc(arena.allocator(), 4096) catch |err| {
         _ = try child.wait();
         return err;
     };
@@ -140,7 +155,9 @@ fn get_value(alc: std.mem.Allocator, file: []const u8, value: []const u8) ![]con
 
     if (result != .Exited or result.Exited != 0) {
         std.debug.print("Command failed: {s} for {s}\n", .{ cmd, value });
-        std.debug.print("Exit code: {}\n", .{result.Exited});
+        std.debug.print("Exit code: {d}\n", .{result.Exited});
+        std.debug.print("stdout: {s}\n", .{output});
+        std.debug.print("stderr: {s}\n", .{output_err});
         return error.CommandExecError;
     }
 
