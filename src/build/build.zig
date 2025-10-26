@@ -45,8 +45,8 @@ const ProgressState = struct {
     }
 };
 
-fn hashWorker(job: HashJob) !void {
-    const file = try std.fs.cwd().openFile(job.path, .{});
+fn hash_file(allocator: std.mem.Allocator, path: []const u8) !void {
+    const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
 
     var hasher = Blake3.init(.{});
@@ -62,17 +62,24 @@ fn hashWorker(job: HashJob) !void {
     hasher.final(&hash);
 
     var hex_string = std.ArrayList(u8){};
-    defer hex_string.deinit(job.allocator);
+    defer hex_string.deinit(allocator);
 
-    const writer = hex_string.writer(job.allocator);
+    const writer = hex_string.writer(allocator);
     for (hash) |byte| {
         try writer.print("{x:0>2}", .{byte});
     }
 
-    const output_file = try std.fs.cwd().createFile(job.output, .{});
+    const output = try std.fmt.allocPrint(allocator, "{s}.hash", .{path});
+    defer allocator.free(output);
+
+    const output_file = try std.fs.cwd().createFile(output, .{});
     defer output_file.close();
 
     try output_file.writeAll(hex_string.items);
+}
+
+fn hashWorker(job: HashJob) !void {
+    try hash_file(job.allocator, job.path);
 }
 
 pub fn build() !void {
@@ -95,9 +102,9 @@ pub fn build() !void {
     while (try iter.next()) |entry| {
         const ext = std.fs.path.extension(entry.name);
         if (std.mem.eql(u8, ext, ".hcl") or std.mem.eql(u8, ext, ".hb")) {
-            const hash_file = try std.fmt.allocPrint(allocator, "{s}.hash", .{entry.name});
-            defer allocator.free(hash_file);
-            if (exists(hash_file)) {
+            const output = try std.fmt.allocPrint(allocator, "{s}.hash", .{entry.name});
+            defer allocator.free(output);
+            if (exists(output)) {
                 continue;
             }
             const name_copy = try allocator.dupe(u8, entry.name);
@@ -150,7 +157,12 @@ fn create_index(allocator: std.mem.Allocator) !void {
         std.debug.print("\r\x1b[2Kindex created to {s}\n", .{"index.bin"});
     } else {
         std.debug.print("\r\x1b[2Kindex create failed\n", .{});
+        return;
     }
+
+    std.debug.print("index: hashing", .{});
+    try hash_file(allocator, "index.bin");
+    std.debug.print("\r\x1b[2Kindex: hash done\n", .{});
 }
 
 fn hashWorkerWrapper(
