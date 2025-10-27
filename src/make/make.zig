@@ -142,6 +142,8 @@ fn packaging(allocator: std.mem.Allocator, file: []const u8, package_info: packa
     const source_dir = "/var/lib/hburg/build/";
 
     const source_file = try std.fmt.allocPrint(allocator, "{s}/src-{s}-{s}", .{ source_dir, name, version });
+    defer allocator.free(source_file);
+    defer deleteTreeAbsolute(source_file);
 
     const package_dir = try std.fmt.allocPrint(allocator, "/var/lib/hburg/build/packaging-{s}/", .{name});
     defer allocator.free(package_dir);
