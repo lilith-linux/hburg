@@ -11,7 +11,7 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
 
     if (args.len < 2) {
-        try display_help();
+        display_help();
         std.process.exit(1);
     }
 
@@ -23,11 +23,14 @@ pub fn main() !void {
             std.process.exit(1);
         }
         try make_hb.make(allocator, args[2]);
+    } else {
+        std.debug.print("Unknown command: {s}\n", .{args[1]});
+        display_help();
     }
 
     return;
 }
 
-fn display_help() !void {
+fn display_help() void {
     std.debug.print("{s}\n", .{help_message});
 }

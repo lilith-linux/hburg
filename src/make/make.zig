@@ -31,12 +31,12 @@ pub fn make(allocator: std.mem.Allocator, file: []const u8) !void {
         try std.fs.cwd().deleteFile(hashfile);
     }
     build_package(allocator, file, package_info.*) catch |err| {
-        std.debug.print("Failed to build package: {any}\n", .{err});
+        std.debug.print("\nFailed to build package: {any}\n", .{err});
         std.process.exit(1);
     };
 
     packaging(allocator, file, package_info.*) catch |err| {
-        std.debug.print("Failed to package package: {any}\n", .{err});
+        std.debug.print("\nFailed to packaging package: {any}\n", .{err});
         std.process.exit(1);
     };
 }
