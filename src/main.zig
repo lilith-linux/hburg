@@ -32,6 +32,7 @@ pub fn main() !void {
     } else {
         std.debug.print("Unknown command: {s}\n", .{args[1]});
         display_help();
+        std.process.exit(1);
     }
 
     return;
