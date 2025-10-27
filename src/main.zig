@@ -21,7 +21,7 @@ pub fn main() !void {
         try build.build(allocator);
     } else if (eql(u8, args[1], "make")) {
         if (args.len < 3) {
-            std.debug.print("Usage: hburg make <FILE>\n", .{});
+            std.debug.print("usage: hburg make <FILE>\n", .{});
             std.process.exit(1);
         }
         try make_hb.make(allocator, args[2]);
