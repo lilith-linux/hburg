@@ -101,9 +101,12 @@ fn build_package(allocator: std.mem.Allocator, hb_file: []const u8, package_info
     const build_file = try std.fs.realpathAlloc(allocator, hb_file);
     defer allocator.free(build_file);
 
-    _ = try makeDirAbsoluteRecursive(allocator, package_dir);
+    const temp_dir = try std.fmt.allocPrint(allocator, "/var/lib/hburg/build/temp-{s}", .{name});
+    defer allocator.free(temp_dir);
 
+    _ = try makeDirAbsoluteRecursive(allocator, package_dir);
     _ = try makeDirAbsoluteRecursive(allocator, build_dir);
+    _ = try makeDirAbsoluteRecursive(allocator, temp_dir);
 
     var env_map = try std.process.getEnvMap(allocator);
     defer env_map.deinit();
@@ -153,6 +156,10 @@ fn packaging(allocator: std.mem.Allocator, file: []const u8, package_info: packa
     defer allocator.free(build_dir);
     defer deleteTreeAbsolute(build_dir);
 
+    const temp_dir = try std.fmt.allocPrint(allocator, "/var/lib/hburg/build/temp-{s}", .{name});
+    defer allocator.free(temp_dir);
+    defer deleteTreeAbsolute(temp_dir);
+
     const build_file = try std.fs.realpathAlloc(allocator, file);
     defer allocator.free(build_file);
 
@@ -192,9 +199,13 @@ fn packaging(allocator: std.mem.Allocator, file: []const u8, package_info: packa
     _ = try std.fs.cwd().createFile(output, .{});
 
     const realpath = try std.fs.realpathAlloc(allocator, output);
+    const temp_tar_file = try std.fmt.allocPrint(allocator, "{s}/{s}.tar", .{temp_dir, name});
 
     {
-        const tar_cmd = try std.fmt.allocPrint(allocator, "cd {s} && tar -cjf {s} .", .{ package_dir, realpath });
+        // temp tar file
+
+        std.debug.print("\r\x1b[2Kcompressing: {s}\tcollect files", .{name});
+        const tar_cmd = try std.fmt.allocPrint(allocator, "cd {s} && tar -cf {s}", .{ package_dir, temp_tar_file });
         defer allocator.free(tar_cmd);
 
         var child = std.process.Child.init(&.{
@@ -203,11 +214,7 @@ fn packaging(allocator: std.mem.Allocator, file: []const u8, package_info: packa
             "-c",
             tar_cmd,
         }, allocator);
-
-        child.env_map = &env_map;
-        child.stdout_behavior = .Inherit;
         child.stderr_behavior = .Pipe;
-        child.stdin_behavior = .Inherit;
 
         const result = try child.spawnAndWait();
 
@@ -221,7 +228,34 @@ fn packaging(allocator: std.mem.Allocator, file: []const u8, package_info: packa
             return error.BuildFailed;
         }
     }
-    std.debug.print("\n", .{});
+    {
+        // create zstd file
+        std.debug.print("\r\x1b[2Kcompressing: {s}\tcompressing tar file", .{name});
+        const tar_cmd = try std.fmt.allocPrint(allocator, "cd {s} && zstd {s} -o {s}", .{ package_dir, temp_tar_file, realpath});
+        defer allocator.free(tar_cmd);
+
+        var child = std.process.Child.init(&.{
+            "/usr/bin/env",
+            "sh",
+            "-c",
+            tar_cmd,
+        }, allocator);
+        child.stderr_behavior = .Pipe;
+
+        const result = try child.spawnAndWait();
+
+        if (child.stderr) |err| {
+            const readed = try err.deprecatedReader().readAllAlloc(allocator, 4096);
+            std.debug.print("\x1b[s\x1b[1A\n{s}\n", .{readed});
+            std.debug.print("\x1b[u", .{});
+        }
+
+        if (result != .Exited or result.Exited != 0) {
+            return error.BuildFailed;
+        }
+ 
+    }
+    std.debug.print("\r\x1b[2Kcompress: done\n", .{});
 }
 
 fn fetch_source(alc: std.mem.Allocator, url: []const u8, save_file: []const u8) !void {
