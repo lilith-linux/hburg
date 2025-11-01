@@ -68,7 +68,7 @@ fn hash_file(allocator: std.mem.Allocator, path: []const u8) !void {
         try writer.print("{x:0>2}", .{byte});
     }
 
-    const output = try std.fmt.allocPrint(allocator, "{s}.hash", .{path});
+    const output = try std.fmt.allocPrint(allocator, "{s}.b3", .{path});
     defer allocator.free(output);
 
     const output_file = try std.fs.cwd().createFile(output, .{});
