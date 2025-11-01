@@ -8,9 +8,13 @@ const VERSION = "1.0.0";
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
+    defer {
+        _ = gpa.deinit();
+    }
     const allocator = gpa.allocator();
 
     const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
 
     if (args.len < 2) {
         display_help();

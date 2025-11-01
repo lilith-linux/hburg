@@ -34,7 +34,7 @@ pub fn make_index(allocator: std.mem.Allocator) !bool {
         packages_list.package[i] = pkg_obj.*;
     }
 
-    try writer.packages_write(packages_list.*, "index.bin");
+    try writer.packages_write(packages_list.*, "index");
 
     return true;
 }

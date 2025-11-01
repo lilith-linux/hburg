@@ -96,8 +96,8 @@ pub fn build(allocator: std.mem.Allocator) !void {
     var iter = dir.iterate();
     while (try iter.next()) |entry| {
         const ext = std.fs.path.extension(entry.name);
-        if (std.mem.eql(u8, ext, ".hcl") or std.mem.eql(u8, ext, ".hb")) {
-            const output = try std.fmt.allocPrint(allocator, "{s}.hash", .{entry.name});
+        if (std.mem.eql(u8, ext, ".clos") or std.mem.eql(u8, ext, ".hb")) {
+            const output = try std.fmt.allocPrint(allocator, "{s}.b3", .{entry.name});
             defer allocator.free(output);
             if (exists(output)) {
                 continue;
@@ -109,7 +109,7 @@ pub fn build(allocator: std.mem.Allocator) !void {
     }
 
     if (checklist.items.len == 0) {
-        try info(allocator, "No new .hcl files found.\n", .{});
+        try info(allocator, "No new .clos files found.\n", .{});
         try create_index(allocator);
         return;
     }
@@ -149,14 +149,14 @@ fn create_index(allocator: std.mem.Allocator) !void {
     std.debug.print("index: progress", .{});
     const avail = try make_index.make_index(allocator);
     if (avail) {
-        std.debug.print("\r\x1b[2Kindex created to {s}\n", .{"index.bin"});
+        std.debug.print("\r\x1b[2Kindex created to {s}\n", .{"index"});
     } else {
         std.debug.print("\r\x1b[2Kindex create failed\n", .{});
         return;
     }
 
     std.debug.print("index: hashing", .{});
-    try hash_file(allocator, "index.bin");
+    try hash_file(allocator, "index");
     std.debug.print("\r\x1b[2Kindex: hash done\n", .{});
 }
 

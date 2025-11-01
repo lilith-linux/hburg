@@ -23,13 +23,9 @@ pub fn make(allocator: std.mem.Allocator, file: []const u8) !void {
         try file_sh.writeAll(build_script);
     }
 
-    const hashfile = try std.fmt.allocPrint(allocator, "{s}.hash", .{file});
-    defer allocator.free(hashfile);
+    const b3_file = try std.fmt.allocPrint(allocator, "{s}.b3", .{file});
+    defer allocator.free(b3_file);
 
-    if (exists(hashfile)) {
-        std.debug.print("delete old .hash file\n", .{});
-        try std.fs.cwd().deleteFile(hashfile);
-    }
     build_package(allocator, file, package_info.*) catch |err| {
         std.debug.print("\nFailed to build package: {any}\n", .{err});
         std.process.exit(1);
@@ -194,18 +190,20 @@ fn packaging(allocator: std.mem.Allocator, file: []const u8, package_info: packa
     }
 
     std.debug.print("\r\x1b[2Kcompressing: {s}", .{name});
-    const output = try std.fmt.allocPrint(allocator, "{s}.hcl", .{name});
+    const output = try std.fmt.allocPrint(allocator, "{s}.clos", .{name});
     defer allocator.free(output);
     _ = try std.fs.cwd().createFile(output, .{});
 
     const realpath = try std.fs.realpathAlloc(allocator, output);
-    const temp_tar_file = try std.fmt.allocPrint(allocator, "{s}/{s}.tar", .{temp_dir, name});
+    defer allocator.free(realpath);
+
+    const temp_tar_file = try std.fmt.allocPrint(allocator, "{s}/{s}.tar", .{ temp_dir, name });
+    defer allocator.free(temp_tar_file);
 
     {
         // temp tar file
-
         std.debug.print("\r\x1b[2Kcompressing: {s}\tcollect files", .{name});
-        const tar_cmd = try std.fmt.allocPrint(allocator, "cd {s} && tar -cf {s}", .{ package_dir, temp_tar_file });
+        const tar_cmd = try std.fmt.allocPrint(allocator, "cd {s} && tar -cf {s} .", .{ package_dir, temp_tar_file });
         defer allocator.free(tar_cmd);
 
         var child = std.process.Child.init(&.{
@@ -220,6 +218,7 @@ fn packaging(allocator: std.mem.Allocator, file: []const u8, package_info: packa
 
         if (child.stderr) |err| {
             const readed = try err.deprecatedReader().readAllAlloc(allocator, 4096);
+            defer allocator.free(readed);
             std.debug.print("\x1b[s\x1b[1A\n{s}\n", .{readed});
             std.debug.print("\x1b[u", .{});
         }
@@ -230,32 +229,28 @@ fn packaging(allocator: std.mem.Allocator, file: []const u8, package_info: packa
     }
     {
         // create zstd file
-        std.debug.print("\r\x1b[2Kcompressing: {s}\tcompressing tar file", .{name});
-        const tar_cmd = try std.fmt.allocPrint(allocator, "cd {s} && zstd {s} -o {s}", .{ package_dir, temp_tar_file, realpath});
-        defer allocator.free(tar_cmd);
+        std.debug.print("\r\x1b[2Kcompressing: {s}\tcompressing to zstd", .{name});
+        const zstd_cmd = try std.fmt.allocPrint(allocator, "zstd -q -f {s} -o {s}", .{ temp_tar_file, realpath });
+        defer allocator.free(zstd_cmd);
 
         var child = std.process.Child.init(&.{
             "/usr/bin/env",
             "sh",
             "-c",
-            tar_cmd,
+            zstd_cmd,
         }, allocator);
-        child.stderr_behavior = .Pipe;
+        child.stderr_behavior = .Ignore;
+        child.stdin_behavior = .Ignore;
+        child.stdout_behavior = .Ignore;
 
         const result = try child.spawnAndWait();
-
-        if (child.stderr) |err| {
-            const readed = try err.deprecatedReader().readAllAlloc(allocator, 4096);
-            std.debug.print("\x1b[s\x1b[1A\n{s}\n", .{readed});
-            std.debug.print("\x1b[u", .{});
-        }
 
         if (result != .Exited or result.Exited != 0) {
             return error.BuildFailed;
         }
- 
     }
     std.debug.print("\r\x1b[2Kcompress: done\n", .{});
+    std.debug.print("package created to: {s}\n", .{realpath});
 }
 
 fn fetch_source(alc: std.mem.Allocator, url: []const u8, save_file: []const u8) !void {
@@ -270,7 +265,6 @@ fn fetch_source(alc: std.mem.Allocator, url: []const u8, save_file: []const u8) 
 }
 
 pub fn makeDirAbsoluteRecursive(allocator: std.mem.Allocator, dir_path: []const u8) !void {
-    var parts = std.mem.splitSequence(u8, dir_path, "/");
     var current_path = std.ArrayList(u8){};
     defer current_path.deinit(allocator);
 
@@ -278,6 +272,7 @@ pub fn makeDirAbsoluteRecursive(allocator: std.mem.Allocator, dir_path: []const 
         try current_path.append(allocator, '/');
     }
 
+    var parts = std.mem.splitSequence(u8, dir_path, "/");
     while (parts.next()) |part| {
         if (part.len == 0) continue;
 
