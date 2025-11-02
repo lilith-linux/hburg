@@ -1,10 +1,13 @@
 const help_message = @embedFile("./templates/help_message");
 const std = @import("std");
+const builtin = @import("builtin");
 const eql = std.mem.eql;
 const make_hb = @import("make");
 const build = @import("build");
 
-const VERSION = "1.0.0";
+// rowan -> pre-alpha | amary -> alpha | flower -> beta | wood -> stable
+const VERSION = "0.1.0 (rowan)";
+const ZIG_VERSION = builtin.zig_version_string;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
@@ -33,6 +36,7 @@ pub fn main() !void {
         display_help();
     } else if (eql(u8, args[1], "version")) {
         std.debug.print("hburg version {s}\n", .{VERSION});
+        std.debug.print("with zig {s}\n", .{ZIG_VERSION});
     } else {
         std.debug.print("Unknown command: {s}\n", .{args[1]});
         display_help();
